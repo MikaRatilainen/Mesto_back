@@ -1,4 +1,5 @@
 const Cards = require('../models/card');
+const { handleNotFound } = require('./services/dataHandlers');
 
 module.exports.readCards = (req, res) => {
   Cards.find({})
@@ -18,7 +19,8 @@ module.exports.deleteCard = (req, res) => {
   const { cardId } = req.params;
 
   Cards.findByIdAndRemove(cardId)
-    .then((card) => res.send({ data: card }))
+    .then((card) => handleNotFound(card, res))
+    .then(() => res.send({ message: 'данные обновлены' }))
     .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
 };
 
