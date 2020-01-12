@@ -1,8 +1,10 @@
 const Cards = require('../models/card');
 const { handleNotFound } = require('./services/dataHandlers');
+const { handleInvalidId } = require('./services/handleInvalidId');
 
 module.exports.readCards = (req, res) => {
   Cards.find({})
+    .then((cards) => handleNotFound(cards, res))
     .then((cards) => res.send({ data: cards }))
     .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
 };
@@ -17,6 +19,7 @@ module.exports.createCard = (req, res) => {
 
 module.exports.deleteCard = (req, res) => {
   const { cardId } = req.params;
+  handleInvalidId(cardId, res);
 
   Cards.findByIdAndRemove(cardId)
     .then((card) => handleNotFound(card, res))
@@ -26,24 +29,28 @@ module.exports.deleteCard = (req, res) => {
 
 module.exports.likeCard = (req, res) => {
   const { cardId } = req.params;
+  handleInvalidId(cardId, res);
 
   Cards.findByIdAndUpdate(
     cardId,
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
+    .then((card) => handleNotFound(card, res))
     .then((card) => res.send({ data: card }))
     .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
 };
 
 module.exports.dislikeCard = (req, res) => {
   const { cardId } = req.params;
+  handleInvalidId(cardId, res);
 
   Cards.findByIdAndUpdate(
     cardId,
     { $pull: { likes: req.user._id } },
     { new: true },
   )
+    .then((card) => handleNotFound(card, res))
     .then((card) => res.send({ data: card }))
     .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
 };

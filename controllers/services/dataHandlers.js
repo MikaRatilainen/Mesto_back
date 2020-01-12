@@ -1,7 +1,13 @@
+const { handleNotFound } = require('./handleNotFound');
+
 module.exports.handleNotFound = (data, res) => {
-  if (data === null) {
-    res.status(404).send({ message: 'Ресурс не найден' });
+  const isEmptyArray = data.length && data.length === 0;
+  const isNull = data === null;
+  const isNotFound = isEmptyArray || isNull;
+
+  if (isNotFound) {
+    handleNotFound(res);
   }
 
-  return res;
+  return data;
 };
