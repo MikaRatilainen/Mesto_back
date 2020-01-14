@@ -1,10 +1,11 @@
 const Cards = require('../models/card');
-const { handleNotFound } = require('./services/dataHandlers');
-const { handleInvalidId } = require('./services/handleInvalidId');
+const { handleEmptyData } = require('./services/dataHandlers');
+const { checkIdValiness } = require('./services/checkIdValiness');
+const { handleNotFound } = require('./services/handleNotFound');
 
 module.exports.readCards = (req, res) => {
   Cards.find({})
-    .then((cards) => handleNotFound(cards, res))
+    .then((cards) => handleEmptyData(cards, res))
     .then((cards) => res.send({ data: cards }))
     .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
 };
@@ -17,40 +18,52 @@ module.exports.createCard = (req, res) => {
     .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
 };
 
-module.exports.deleteCard = (req, res) => {
+module.exports.deleteCard = async (req, res) => {
   const { cardId } = req.params;
-  handleInvalidId(cardId, res);
+  const isIdValid = await checkIdValiness(Cards, cardId);
 
-  Cards.findByIdAndRemove(cardId)
-    .then((card) => handleNotFound(card, res))
-    .then(() => res.send({ message: 'данные обновлены' }))
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  if (isIdValid) {
+    Cards.findByIdAndRemove(cardId)
+      .then((card) => handleEmptyData(card, res))
+      .then(() => res.send({ message: 'данные обновлены' }))
+      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  } else {
+    handleNotFound(res);
+  }
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = async (req, res) => {
   const { cardId } = req.params;
-  handleInvalidId(cardId, res);
+  const isIdValid = await checkIdValiness(Cards, cardId);
 
-  Cards.findByIdAndUpdate(
-    cardId,
-    { $addToSet: { likes: req.user._id } },
-    { new: true },
-  )
-    .then((card) => handleNotFound(card, res))
-    .then((card) => res.send({ data: card }))
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  if (isIdValid) {
+    Cards.findByIdAndUpdate(
+      cardId,
+      { $addToSet: { likes: req.user._id } },
+      { new: true },
+    )
+      .then((card) => handleEmptyData(card, res))
+      .then((card) => res.send({ data: card }))
+      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  } else {
+    handleNotFound(res);
+  }
 };
 
-module.exports.dislikeCard = (req, res) => {
+module.exports.dislikeCard = async (req, res) => {
   const { cardId } = req.params;
-  handleInvalidId(cardId, res);
+  const isIdValid = await checkIdValiness(Cards, cardId);
 
-  Cards.findByIdAndUpdate(
-    cardId,
-    { $pull: { likes: req.user._id } },
-    { new: true },
-  )
-    .then((card) => handleNotFound(card, res))
-    .then((card) => res.send({ data: card }))
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  if (isIdValid) {
+    Cards.findByIdAndUpdate(
+      cardId,
+      { $pull: { likes: req.user._id } },
+      { new: true },
+    )
+      .then((card) => handleEmptyData(card, res))
+      .then((card) => res.send({ data: card }))
+      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  } else {
+    handleNotFound(res);
+  }
 };

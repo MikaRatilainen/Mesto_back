@@ -1,22 +1,27 @@
 const User = require('../models/user');
-const { handleNotFound } = require('./services/dataHandlers');
-const { handleInvalidId } = require('./services/handleInvalidId');
+const { handleEmptyData } = require('./services/dataHandlers');
+const { checkIdValiness } = require('./services/checkIdValiness');
+const { handleNotFound } = require('./services/handleNotFound');
 
 module.exports.readUsers = (req, res) => {
   User.find({})
-    .then((users) => handleNotFound(users, res))
+    .then((users) => handleEmptyData(users, res))
     .then((users) => res.send({ data: users }))
     .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
 };
 
-module.exports.readUser = (req, res) => {
+module.exports.readUser = async (req, res) => {
   const { id } = req.params;
-  handleInvalidId(id, res);
+  const isIdValid = await checkIdValiness(User, id);
 
-  User.findById(id)
-    .then((user) => handleNotFound(user, res))
-    .then((user) => res.send({ data: user }))
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  if (isIdValid) {
+    User.findById(id)
+      .then((user) => handleEmptyData(user, res))
+      .then((user) => res.send({ data: user }))
+      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  } else {
+    handleNotFound(res);
+  }
 };
 
 module.exports.createUser = (req, res) => {
@@ -27,24 +32,32 @@ module.exports.createUser = (req, res) => {
     .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
 };
 
-module.exports.updateUser = (req, res) => {
+module.exports.updateUser = async (req, res) => {
   const { name, about } = req.body;
   const { _id } = req.user;
-  handleInvalidId(_id, res);
+  const isIdValid = await checkIdValiness(User, _id);
 
-  User.findByIdAndUpdate(_id, { name, about })
-    .then((user) => handleNotFound(user, res))
-    .then((user) => res.send({ data: user }))
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  if (isIdValid) {
+    User.findByIdAndUpdate(_id, { name, about })
+      .then((user) => handleEmptyData(user, res))
+      .then((user) => res.send({ data: user }))
+      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  } else {
+    handleNotFound(res);
+  }
 };
 
-module.exports.updateUserAvatar = (req, res) => {
+module.exports.updateUserAvatar = async (req, res) => {
   const { avatar } = req.body;
   const { _id } = req.user;
-  handleInvalidId(_id, res);
+  const isIdValid = await checkIdValiness(User, _id);
 
-  User.findByIdAndUpdate(_id, { avatar })
-    .then((user) => handleNotFound(user, res))
-    .then((user) => res.send({ data: user }))
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  if (isIdValid) {
+    User.findByIdAndUpdate(_id, { avatar })
+      .then((user) => handleEmptyData(user, res))
+      .then((user) => res.send({ data: user }))
+      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+  } else {
+    handleNotFound(res);
+  }
 };
