@@ -1,10 +1,12 @@
 const jwt = require('jsonwebtoken');
 
+const SECRET_KEY = 'some-secret-key';
+
 // eslint-disable-next-line consistent-return
-module.exports.auth = (req, res, next) => {
+const auth = (req, res, next) => {
   let payload;
   try {
-    payload = jwt.verify(req.cookies.jwt, 'some-secret-key');
+    payload = jwt.verify(req.cookies.jwt, SECRET_KEY);
   } catch (err) {
     return res
       .status(401)
@@ -14,4 +16,9 @@ module.exports.auth = (req, res, next) => {
   req.user = payload;
 
   next();
+};
+
+module.exports = {
+  SECRET_KEY,
+  auth,
 };

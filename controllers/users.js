@@ -3,25 +3,35 @@ const jwt = require('jsonwebtoken');
 const escape = require('escape-html');
 
 const User = require('../models/user');
-const { handleEmptyData } = require('./services/dataHandlers');
-const { checkIdValiness } = require('./services/checkIdValiness');
+const { checkIdValidness } = require('./services/checkIdValidness');
 const { handleNotFound } = require('./services/handleNotFound');
+const { SECRET_KEY } = require('../middlewares/auth');
 
 module.exports.readUsers = (req, res) => {
   User.find({})
-    .then((users) => handleEmptyData(users, res))
-    .then((users) => res.send({ data: users }))
+    .then((users) => {
+      if (users.lenght === 0) {
+        handleNotFound(res);
+      } else {
+        res.send({ data: users });
+      }
+    })
     .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
 };
 
 module.exports.readUser = async (req, res) => {
   const { id } = req.params;
-  const isIdValid = await checkIdValiness(User, id);
+  const isIdValid = await checkIdValidness(id);
 
   if (isIdValid) {
     User.findById(id)
-      .then((user) => handleEmptyData(user, res))
-      .then((user) => res.send({ data: user }))
+      .then((user) => {
+        if (!user) {
+          handleNotFound(res);
+        } else {
+          res.send({ data: user });
+        }
+      })
       .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
   } else {
     handleNotFound(res);
@@ -42,22 +52,28 @@ module.exports.createUser = (req, res) => {
       email: escape(email),
       password: hash,
     }))
-    .then((user) => res.send({ data: user }))
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+    // eslint-disable-next-line no-shadow
+    .then(({ password, ...restUser }) => res.send({ data: restUser }))
+    .catch((err) => res.status(400).send({ message: `Произошла ошибка, ${err}` }));
 };
 
 module.exports.updateUser = async (req, res) => {
   const { name, about } = req.body;
   const { _id } = req.user;
-  const isIdValid = await checkIdValiness(User, _id);
+  const isIdValid = await checkIdValidness(_id);
 
   if (isIdValid) {
     User.findByIdAndUpdate(_id, {
       name: escape(name),
       about: escape(about),
     })
-      .then((user) => handleEmptyData(user, res))
-      .then((user) => res.send({ data: user }))
+      .then((user) => {
+        if (!user) {
+          handleNotFound(res);
+        } else {
+          res.send({ data: user });
+        }
+      })
       .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
   } else {
     handleNotFound(res);
@@ -67,12 +83,17 @@ module.exports.updateUser = async (req, res) => {
 module.exports.updateUserAvatar = async (req, res) => {
   const { avatar } = req.body;
   const { _id } = req.user;
-  const isIdValid = await checkIdValiness(User, _id);
+  const isIdValid = await checkIdValidness(_id);
 
   if (isIdValid) {
     User.findByIdAndUpdate(_id, { avatar: escape(avatar) })
-      .then((user) => handleEmptyData(user, res))
-      .then((user) => res.send({ data: user }))
+      .then((user) => {
+        if (!user) {
+          handleNotFound(res);
+        } else {
+          res.send({ data: user });
+        }
+      })
       .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
   } else {
     handleNotFound(res);
@@ -86,7 +107,7 @@ module.exports.login = async (req, res) => {
     .then((user) => {
       const token = jwt.sign(
         { _id: user._id },
-        'some-secret-key',
+        SECRET_KEY,
         { expiresIn: '7d' },
       );
 
