@@ -1,13 +1,14 @@
 const escape = require('escape-html');
 
 const Cards = require('../models/card');
+const { VALIDATION_ERROR } = require('../models/services/validateService');
 const { checkIdValidness } = require('./services/checkIdValidness');
 const { handleNotFound } = require('./services/handleNotFound');
 
 module.exports.readCards = (req, res) => {
   Cards.find({})
     .then((cards) => {
-      if (cards.length === 0) {
+      if (!cards) {
         handleNotFound(res);
       } else {
         res.send({ data: cards });
@@ -25,33 +26,44 @@ module.exports.createCard = (req, res) => {
     owner: req.user._id,
   })
     .then((card) => res.send({ data: card }))
-    .catch((err) => res.status(400).send({ message: `Произошла ошибка, ${err}` }));
+    .catch((err) => {
+      const isValidationError = err.name.startsWith(VALIDATION_ERROR);
+      if (isValidationError) {
+        res.status(400).send({ message: `Произошла ошибка, ${err}` });
+      } else {
+        res.status(500).send({ message: `Произошла ошибка, ${err}` });
+      }
+    });
 };
 
 module.exports.deleteCard = async (req, res) => {
   const { cardId } = req.params;
-  let isIdValid = await checkIdValidness(cardId);
-  const { _id } = req.user;
+  let isIdValid = checkIdValidness(cardId);
 
-  let isUserCardOwner = false;
-  await Cards.findById(cardId)
-    .then((card) => {
-      if (!card) {
-        isIdValid = false;
-      } else {
-        isUserCardOwner = String(_id) === String(card.owner);
-      }
-    })
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
-
-  if (isIdValid && isUserCardOwner) {
-    Cards.findByIdAndRemove(cardId)
-      .then(() => res.send({ message: 'данные обновлены' }))
+  if (isIdValid) {
+    const { _id } = req.user;
+    let isUserCardOwner = false;
+    await Cards.findById(cardId)
+      .then((card) => {
+        if (!card) {
+          isIdValid = false;
+        } else {
+          isUserCardOwner = String(_id) === String(card.owner);
+        }
+      })
       .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
-  } else if (!isIdValid) {
+
+    if (isIdValid && isUserCardOwner) {
+      Cards.findByIdAndRemove(cardId)
+        .then(() => res.send({ message: 'данные обновлены' }))
+        .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+    } else if (!isIdValid) {
+      handleNotFound(res);
+    } else if (!isUserCardOwner) {
+      res.status(403).send({ message: 'действие недоступно пользователю' });
+    }
+  } else {
     handleNotFound(res);
-  } else if (!isUserCardOwner) {
-    res.status(403).send({ message: 'действие недоступно пользователю' });
   }
 };
 

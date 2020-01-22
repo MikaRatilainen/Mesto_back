@@ -1,5 +1,7 @@
 const validator = require('validator');
 
+const VALIDATION_ERROR = 'ValidationError';
+
 function validateURL(value) {
   return validator.isURL(value);
 }
@@ -9,11 +11,11 @@ function validateEmail(value) {
 }
 
 function handleURLError(props) {
-  return `${props.value} is not a valid url!`;
+  return `${VALIDATION_ERROR} ${props.value} is not a valid url!`;
 }
 
 function handleEmailError(props) {
-  return `${props.value} is not a valid email!`;
+  return `${VALIDATION_ERROR} ${props.value} is not a valid email!`;
 }
 
 module.exports = {
@@ -21,4 +23,5 @@ module.exports = {
   validateEmail,
   handleURLError,
   handleEmailError,
+  VALIDATION_ERROR,
 };

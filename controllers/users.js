@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const escape = require('escape-html');
 
 const User = require('../models/user');
+const { VALIDATION_ERROR } = require('../models/services/validateService');
 const { checkIdValidness } = require('./services/checkIdValidness');
 const { handleNotFound } = require('./services/handleNotFound');
 const { SECRET_KEY } = require('../middlewares/auth');
@@ -10,7 +11,7 @@ const { SECRET_KEY } = require('../middlewares/auth');
 module.exports.readUsers = (req, res) => {
   User.find({})
     .then((users) => {
-      if (users.lenght === 0) {
+      if (!users) {
         handleNotFound(res);
       } else {
         res.send({ data: users });
@@ -54,7 +55,14 @@ module.exports.createUser = (req, res) => {
     }))
     // eslint-disable-next-line no-shadow
     .then(({ password, ...restUser }) => res.send({ data: restUser }))
-    .catch((err) => res.status(400).send({ message: `Произошла ошибка, ${err}` }));
+    .catch((err) => {
+      const isValidationError = err.name.startsWith(VALIDATION_ERROR);
+      if (isValidationError) {
+        res.status(400).send({ message: `Произошла ошибка, ${err}` });
+      } else {
+        res.status(500).send({ message: `Произошла ошибка, ${err}` });
+      }
+    });
 };
 
 module.exports.updateUser = async (req, res) => {
@@ -74,7 +82,14 @@ module.exports.updateUser = async (req, res) => {
           res.send({ data: user });
         }
       })
-      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+      .catch((err) => {
+        const isValidationError = err.name.startsWith(VALIDATION_ERROR);
+        if (isValidationError) {
+          res.status(400).send({ message: `Произошла ошибка, ${err}` });
+        } else {
+          res.status(500).send({ message: `Произошла ошибка, ${err}` });
+        }
+      });
   } else {
     handleNotFound(res);
   }
@@ -94,7 +109,14 @@ module.exports.updateUserAvatar = async (req, res) => {
           res.send({ data: user });
         }
       })
-      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+      .catch((err) => {
+        const isValidationError = err.name.startsWith(VALIDATION_ERROR);
+        if (isValidationError) {
+          res.status(400).send({ message: `Произошла ошибка, ${err}` });
+        } else {
+          res.status(500).send({ message: `Произошла ошибка, ${err}` });
+        }
+      });
   } else {
     handleNotFound(res);
   }
