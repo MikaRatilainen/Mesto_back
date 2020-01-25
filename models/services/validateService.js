@@ -1,15 +1,27 @@
-// eslint-disable-next-line no-useless-escape
-const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+const validator = require('validator');
+
+const VALIDATION_ERROR = 'ValidationError';
 
 function validateURL(value) {
-  return URL_REGEX.test(value);
+  return validator.isURL(value);
+}
+
+function validateEmail(value) {
+  return validator.isEmail(value);
 }
 
 function handleURLError(props) {
-  return `${props.value} is not a valid url!`;
+  return `${VALIDATION_ERROR} ${props.value} is not a valid url!`;
+}
+
+function handleEmailError(props) {
+  return `${VALIDATION_ERROR} ${props.value} is not a valid email!`;
 }
 
 module.exports = {
   validateURL,
+  validateEmail,
   handleURLError,
+  handleEmailError,
+  VALIDATION_ERROR,
 };
