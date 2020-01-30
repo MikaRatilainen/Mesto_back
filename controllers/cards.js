@@ -1,23 +1,22 @@
 const escape = require('escape-html');
 
 const Cards = require('../models/card');
-const { VALIDATION_ERROR } = require('../models/services/validateService');
-const { checkIdValidness } = require('./services/checkIdValidness');
-const { handleNotFound } = require('./services/handleNotFound');
+const NotFoundError = require('../errors/error-not-fonud');
+const ForbiddenError = require('../errors/error-forbidden');
 
-module.exports.readCards = (req, res) => {
+module.exports.readCards = (req, res, next) => {
   Cards.find({})
     .then((cards) => {
       if (!cards) {
-        handleNotFound(res);
-      } else {
-        res.send({ data: cards });
+        throw new NotFoundError('Ресурс не найден');
       }
+
+      res.send({ data: cards });
     })
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+    .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
 
   Cards.create({
@@ -26,89 +25,65 @@ module.exports.createCard = (req, res) => {
     owner: req.user._id,
   })
     .then((card) => res.send({ data: card }))
-    .catch((err) => {
-      const isValidationError = err.name.startsWith(VALIDATION_ERROR);
-      if (isValidationError) {
-        res.status(400).send({ message: `Произошла ошибка, ${err}` });
-      } else {
-        res.status(500).send({ message: `Произошла ошибка, ${err}` });
+    .catch(next);
+};
+
+module.exports.deleteCard = async (req, res, next) => {
+  const { cardId } = req.params;
+
+  const { _id } = req.user;
+  let isUserCardOwner = false;
+  await Cards.findById(cardId)
+    .then((card) => {
+      if (!card) {
+        throw new NotFoundError('Карточка не найдена');
       }
-    });
-};
 
-module.exports.deleteCard = async (req, res) => {
-  const { cardId } = req.params;
-  let isIdValid = checkIdValidness(cardId);
+      isUserCardOwner = String(_id) === String(card.owner);
+    })
+    .catch(next);
 
-  if (isIdValid) {
-    const { _id } = req.user;
-    let isUserCardOwner = false;
-    await Cards.findById(cardId)
-      .then((card) => {
-        if (!card) {
-          isIdValid = false;
-        } else {
-          isUserCardOwner = String(_id) === String(card.owner);
-        }
-      })
-      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
-
-    if (isIdValid && isUserCardOwner) {
-      Cards.findByIdAndRemove(cardId)
-        .then(() => res.send({ message: 'данные обновлены' }))
-        .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
-    } else if (!isIdValid) {
-      handleNotFound(res);
-    } else if (!isUserCardOwner) {
-      res.status(403).send({ message: 'действие недоступно пользователю' });
-    }
-  } else {
-    handleNotFound(res);
+  if (isUserCardOwner) {
+    Cards.findByIdAndRemove(cardId)
+      .then(() => res.send({ message: 'данные обновлены' }))
+      .catch(next);
+  } else if (!isUserCardOwner) {
+    throw new ForbiddenError('Недостаточно прав для удаления');
   }
 };
 
-module.exports.likeCard = async (req, res) => {
+module.exports.likeCard = async (req, res, next) => {
   const { cardId } = req.params;
-  const isIdValid = await checkIdValidness(cardId);
 
-  if (isIdValid) {
-    Cards.findByIdAndUpdate(
-      cardId,
-      { $addToSet: { likes: req.user._id } },
-      { new: true },
-    )
-      .then((card) => {
-        if (!card) {
-          handleNotFound(res);
-        } else {
-          res.send({ data: card });
-        }
-      })
-      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
-  } else {
-    handleNotFound(res);
-  }
+  Cards.findByIdAndUpdate(
+    cardId,
+    { $addToSet: { likes: req.user._id } },
+    { new: true },
+  )
+    .then((card) => {
+      if (!card) {
+        throw new NotFoundError('Карточка не найдена');
+      }
+
+      res.send({ data: card });
+    })
+    .catch(next);
 };
 
-module.exports.dislikeCard = async (req, res) => {
+module.exports.dislikeCard = async (req, res, next) => {
   const { cardId } = req.params;
-  const isIdValid = await checkIdValidness(cardId);
 
-  if (isIdValid) {
-    Cards.findByIdAndUpdate(
-      cardId,
-      { $pull: { likes: req.user._id } },
-      { new: true },
-    )
-      .then((card) => {
-        if (!card) {
-          handleNotFound(res);
-        } else {
-          res.send({ data: card });
-        }
-      })
-      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
-  } else {
-    handleNotFound(res);
-  }
+  Cards.findByIdAndUpdate(
+    cardId,
+    { $pull: { likes: req.user._id } },
+    { new: true },
+  )
+    .then((card) => {
+      if (!card) {
+        throw new NotFoundError('Карточка не найдена');
+      }
+
+      res.send({ data: card });
+    })
+    .catch(next);
 };

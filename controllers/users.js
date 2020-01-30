@@ -3,43 +3,36 @@ const jwt = require('jsonwebtoken');
 const escape = require('escape-html');
 
 const User = require('../models/user');
-const { VALIDATION_ERROR } = require('../models/services/validateService');
-const { checkIdValidness } = require('./services/checkIdValidness');
-const { handleNotFound } = require('./services/handleNotFound');
 const { SECRET_KEY } = require('../middlewares/auth');
+const NotFoundError = require('../errors/error-not-fonud');
 
-module.exports.readUsers = (req, res) => {
+module.exports.readUsers = (req, res, next) => {
   User.find({})
     .then((users) => {
       if (!users) {
-        handleNotFound(res);
+        throw new NotFoundError('Ресурс не найден');
+      }
+
+      res.send({ data: users });
+    })
+    .catch(next);
+};
+
+module.exports.readUser = async (req, res, next) => {
+  const { id } = req.params;
+
+  User.findById(id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
       } else {
-        res.send({ data: users });
+        res.send({ data: user });
       }
     })
-    .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
+    .catch(next);
 };
 
-module.exports.readUser = async (req, res) => {
-  const { id } = req.params;
-  const isIdValid = await checkIdValidness(id);
-
-  if (isIdValid) {
-    User.findById(id)
-      .then((user) => {
-        if (!user) {
-          handleNotFound(res);
-        } else {
-          res.send({ data: user });
-        }
-      })
-      .catch((err) => res.status(500).send({ message: `Произошла ошибка, ${err}` }));
-  } else {
-    handleNotFound(res);
-  }
-};
-
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
@@ -55,74 +48,43 @@ module.exports.createUser = (req, res) => {
     }))
     // eslint-disable-next-line no-shadow
     .then(({ password, ...restUser }) => res.send({ data: restUser }))
-    .catch((err) => {
-      const isValidationError = err.name.startsWith(VALIDATION_ERROR);
-      if (isValidationError) {
-        res.status(400).send({ message: `Произошла ошибка, ${err}` });
-      } else {
-        res.status(500).send({ message: `Произошла ошибка, ${err}` });
-      }
-    });
+    .catch(next);
 };
 
-module.exports.updateUser = async (req, res) => {
+module.exports.updateUser = async (req, res, next) => {
   const { name, about } = req.body;
   const { _id } = req.user;
-  const isIdValid = await checkIdValidness(_id);
 
-  if (isIdValid) {
-    User.findByIdAndUpdate(_id, {
-      name: escape(name),
-      about: escape(about),
+  User.findByIdAndUpdate(_id, {
+    name: escape(name),
+    about: escape(about),
+  })
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
+      } else {
+        res.send({ data: user });
+      }
     })
-      .then((user) => {
-        if (!user) {
-          handleNotFound(res);
-        } else {
-          res.send({ data: user });
-        }
-      })
-      .catch((err) => {
-        const isValidationError = err.name.startsWith(VALIDATION_ERROR);
-        if (isValidationError) {
-          res.status(400).send({ message: `Произошла ошибка, ${err}` });
-        } else {
-          res.status(500).send({ message: `Произошла ошибка, ${err}` });
-        }
-      });
-  } else {
-    handleNotFound(res);
-  }
+    .catch(next);
 };
 
-module.exports.updateUserAvatar = async (req, res) => {
+module.exports.updateUserAvatar = async (req, res, next) => {
   const { avatar } = req.body;
   const { _id } = req.user;
-  const isIdValid = await checkIdValidness(_id);
 
-  if (isIdValid) {
-    User.findByIdAndUpdate(_id, { avatar: escape(avatar) })
-      .then((user) => {
-        if (!user) {
-          handleNotFound(res);
-        } else {
-          res.send({ data: user });
-        }
-      })
-      .catch((err) => {
-        const isValidationError = err.name.startsWith(VALIDATION_ERROR);
-        if (isValidationError) {
-          res.status(400).send({ message: `Произошла ошибка, ${err}` });
-        } else {
-          res.status(500).send({ message: `Произошла ошибка, ${err}` });
-        }
-      });
-  } else {
-    handleNotFound(res);
-  }
+  User.findByIdAndUpdate(_id, { avatar: escape(avatar) })
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь не найден');
+      } else {
+        res.send({ data: user });
+      }
+    })
+    .catch(next);
 };
 
-module.exports.login = async (req, res) => {
+module.exports.login = async (req, res, next) => {
   const { email, password } = req.body;
 
   User.findUserByCredentials(email, password)
@@ -140,5 +102,5 @@ module.exports.login = async (req, res) => {
       });
       res.end();
     })
-    .catch(({ message }) => res.status(401).send({ message }));
+    .catch(next);
 };
