@@ -1,6 +1,6 @@
 const NotFoundError = require('../errors/error-not-fonud');
 
-const wrongPath = (req, res, next) => {
+const handleWrongPath = (req, res, next) => {
   try {
     throw new NotFoundError('Запрашиваемый ресурс не найден');
   } catch (error) {
@@ -8,4 +8,4 @@ const wrongPath = (req, res, next) => {
   }
 };
 
-module.exports = { wrongPath };
+module.exports = { handleWrongPath };

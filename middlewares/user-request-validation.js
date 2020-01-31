@@ -1,10 +1,10 @@
 const { celebrate, Joi } = require('celebrate');
 
-const { MONGO_OBJECT_ID_PATTERN } = require('./consts');
+const { MONGO_OBJECT_ID_PATTERN, URL_PATTENR } = require('../consts/consts');
 
 const name = Joi.string().required().min(2).max(30);
 const about = Joi.string().required().min(2).max(30);
-const avatar = Joi.string().required().uri();
+const avatar = Joi.string().required().pattern(URL_PATTENR);
 const email = Joi.string().required().email();
 const password = Joi.string().required();
 

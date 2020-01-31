@@ -11,7 +11,7 @@ const cardsRoutes = require('./routes/cards');
 const usersRoutes = require('./routes/users');
 const { login, createUser } = require('./controllers/users');
 const { auth } = require('./middlewares/auth');
-const { wrongPath } = require('./middlewares/wrong-path');
+const { handleWrongPath } = require('./middlewares/wrong-path-handler');
 const { errorHandler } = require('./middlewares/error-handler');
 const { validateCreateUser, validateLogin } = require('./middlewares/user-request-validation');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
@@ -55,7 +55,7 @@ app.use('/cards', cardsRoutes);
 app.use('/users', usersRoutes);
 
 
-app.use(wrongPath);
+app.use(handleWrongPath);
 
 app.use(errorLogger);
 

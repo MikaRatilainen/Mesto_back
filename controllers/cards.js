@@ -33,22 +33,26 @@ module.exports.deleteCard = async (req, res, next) => {
 
   const { _id } = req.user;
   let isUserCardOwner = false;
-  await Cards.findById(cardId)
-    .then((card) => {
-      if (!card) {
-        throw new NotFoundError('Карточка не найдена');
-      }
+  try {
+    await Cards.findById(cardId)
+      .then((card) => {
+        if (!card) {
+          throw new NotFoundError('Карточка не найдена');
+        }
 
-      isUserCardOwner = String(_id) === String(card.owner);
-    })
-    .catch(next);
-
-  if (isUserCardOwner) {
-    Cards.findByIdAndRemove(cardId)
-      .then(() => res.send({ message: 'данные обновлены' }))
+        isUserCardOwner = String(_id) === String(card.owner);
+      })
       .catch(next);
-  } else if (!isUserCardOwner) {
-    throw new ForbiddenError('Недостаточно прав для удаления');
+
+    if (isUserCardOwner) {
+      Cards.findByIdAndRemove(cardId)
+        .then(() => res.send({ message: 'данные обновлены' }))
+        .catch(next);
+    } else if (!isUserCardOwner) {
+      throw new ForbiddenError('Недостаточно прав для удаления');
+    }
+  } catch (error) {
+    next(error);
   }
 };
 
