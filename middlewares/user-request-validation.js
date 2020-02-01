@@ -1,6 +1,6 @@
 const { celebrate, Joi } = require('celebrate');
 
-const { MONGO_OBJECT_ID_PATTERN, URL_PATTENR } = require('../consts/consts');
+const { MONGO_OBJECT_ID_PATTERN, URL_PATTENR } = require('../consts');
 
 const name = Joi.string().required().min(2).max(30);
 const about = Joi.string().required().min(2).max(30);

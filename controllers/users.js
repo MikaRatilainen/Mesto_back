@@ -46,8 +46,7 @@ module.exports.createUser = (req, res, next) => {
       email: escape(email),
       password: hash,
     }))
-    // eslint-disable-next-line no-shadow
-    .then(({ _doc: { password, __v, ...restUser } }) => res.send({ data: restUser }))
+    .then(({ _doc: { password: pass, __v, ...restUser } }) => res.send({ data: restUser }))
     .catch(next);
 };
 

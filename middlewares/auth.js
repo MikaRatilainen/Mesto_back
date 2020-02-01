@@ -1,11 +1,8 @@
 const jwt = require('jsonwebtoken');
 
 const UnauthorizedError = require('../errors/error-unauthorized');
+const { SECRET_KEY } = require('../consts');
 
-const { NODE_ENV, JWT_SECRET } = process.env;
-const SECRET_KEY = NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret';
-
-// eslint-disable-next-line consistent-return
 const auth = (req, res, next) => {
   let payload;
   try {
